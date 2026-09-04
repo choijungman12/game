@@ -5,7 +5,8 @@
 import { Room, genCode, uid, driverName } from "./store.js";
 import { getSettings, selectQuestions, getPlayer, savePlayer } from "./data.js";
 import { scoreRound, rankPlayers } from "./engine.js";
-import { el, esc, fmt, toast, confetti, mascot, avatarEmoji, setSceneTheme, vibrate } from "./ui.js";
+import { el, esc, fmt, toast, confetti, mascot, avatarEmoji, setSceneTheme, setAccent, vibrate } from "./ui.js";
+import { fx } from "./fx.js";
 import { audio, sfx } from "./audio.js";
 import { makeQR } from "./qr.js";
 import { catMeta } from "./config.js";
@@ -154,7 +155,7 @@ async function startHost(host) {
     clearTimeout(autoT);
     await room.update((s) => { if (!s) return s; s.status = "ended"; return s; });
     revealBtn.disabled = true; nextBtn.disabled = true; startBtn.disabled = true;
-    confetti.rain(); setTimeout(() => confetti.stopRain(), 4000); sfx("win");
+    fx.finale(); sfx("win");
     toast("게임을 종료했습니다", "ok");
   }
 }
@@ -165,6 +166,7 @@ function tagCls(cat) { const m = catMeta(cat); return { "chip--blue": "blue", "c
    ========================================================================== */
 export async function startLivePlayer({ code, mount, go }) {
   setSceneTheme("hero");
+  setAccent(null);
   const prev = getPlayer();
   const me = { id: (prev && prev.id) || uid(), name: prev ? prev.name : "", phone: prev ? prev.phone : "" };
 
@@ -214,10 +216,15 @@ export async function startLivePlayer({ code, mount, go }) {
   }
   function renderQ(state) {
     clearInterval(timer);
+    fx.championEnd();
     const q = state.questions[state.currentIndex];
     view = buildQuestion({
       q, index: state.currentIndex, total: state.questions.length, timeLimit: state.settings.timeLimit,
-      onAnswer: (i, elapsed) => { if (myAnswered) return; myAnswered = true; sfx("select"); vibrate(); room.submit(me.id, state.currentIndex, i, elapsed); },
+      onAnswer: (i, elapsed) => {
+        if (myAnswered) return;
+        myAnswered = true; sfx("select"); vibrate();
+        room.submit(me.id, state.currentIndex, i, elapsed);
+      },
     });
     mount(view.screen); view.resetClock();
     const total = state.settings.timeLimit * 1000; const t0 = performance.now(); let lastTick = null;
@@ -239,9 +246,9 @@ export async function startLivePlayer({ code, mount, go }) {
     const rankText = my.correct ? `정답자 중 ${my.rank}번째로 빠르게 맞혔어요!` : null;
     const { screen } = buildReveal({ q, myResult: my, isWinner, settings: state.settings, rankText, onNext: () => showWaiting("다음 문제를 기다리는 중...") });
     mount(screen);
-    if (isWinner) { sfx("win"); confetti.burst({ count: 140 }); confetti.fountain(0.2); confetti.fountain(0.8); }
-    else if (my.correct) { sfx("correct"); confetti.burst({ count: 46, y: 0.25 }); }
-    else sfx("wrong");
+    if (isWinner) { sfx("win"); fx.champion(); }
+    else if (my.correct) { sfx("correct"); fx.flash("rgba(52,224,138,0.7)", { peak: 0.3, dur: 420 }); confetti.burst({ count: 48, y: 0.25 }); }
+    else { sfx("wrong"); fx.wrong(null); }
   }
   function renderFinal(state) {
     clearInterval(timer);
@@ -249,6 +256,6 @@ export async function startLivePlayer({ code, mount, go }) {
     const players = Object.values(state.players || {});
     const { screen } = buildFinal({ players, meId: me.id, onRestart: () => (location.search = "?room=" + code), onHome: () => { location.search = ""; location.hash = "#/main"; } });
     mount(screen);
-    confetti.rain(); setTimeout(() => confetti.stopRain(), 4200); sfx("win");
+    fx.finale(); sfx("win");
   }
 }

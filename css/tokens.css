@@ -1,45 +1,69 @@
 /* ==========================================================================
-   노후의 땅을 찾아라 — 디자인 토큰
-   목업 기준 팔레트: 그린(개인전/확인), 블루(팀전), 골드(1등/점수),
-   다크 네이비 게임화면, 레드 함정퀴즈
+   노후의 땅을 찾아라 — 디자인 토큰 v2
+   팔레트: 그린(개인전/정답) · 블루(팀전) · 골드(1등/점수) · 레드(함정)
+   다크 네이비 베이스 + 카테고리 액센트 변수(--accent*)로 화면별 톤 전환
    ========================================================================== */
 :root {
   /* ---- Brand ---- */
+  --green-300: #7ef0b2;
   --green-400: #34e08a;
   --green-500: #22c55e;
   --green-600: #16a34a;
+  --green-700: #0f7a3c;
   --green-glow: rgba(34, 197, 94, 0.45);
+  --green-glow-soft: rgba(34, 197, 94, 0.18);
 
+  --blue-300: #8fc2ff;
   --blue-400: #4b9bff;
   --blue-500: #3b82f6;
   --blue-600: #2563eb;
   --blue-700: #1d4ed8;
   --blue-glow: rgba(59, 130, 246, 0.45);
+  --blue-glow-soft: rgba(59, 130, 246, 0.18);
 
+  --gold-200: #fff3c4;
   --gold-300: #ffe27a;
   --gold-400: #ffd24a;
   --gold-500: #f5b301;
   --gold-600: #e08e00;
+  --gold-700: #a86a00;
   --gold-glow: rgba(255, 210, 74, 0.55);
+  --gold-glow-soft: rgba(255, 210, 74, 0.2);
 
+  --red-300: #ffa3a3;
   --red-400: #ff6b6b;
   --red-500: #ef4444;
   --red-600: #dc2626;
   --red-glow: rgba(239, 68, 68, 0.5);
+  --red-glow-soft: rgba(239, 68, 68, 0.18);
 
+  --purple-400: #c4b5fd;
   --purple-600: #7c3aed;
   --purple-800: #4c1d95;
+  --purple-glow: rgba(124, 58, 237, 0.45);
+
+  --cyan-400: #38bdf8;
+  --cyan-glow: rgba(56, 189, 248, 0.45);
+
+  /* ---- 화면/문항별 액센트 (JS가 카테고리 색으로 덮어씀) ---- */
+  --accent: var(--green-400);
+  --accent-2: var(--green-600);
+  --accent-glow: var(--green-glow);
+  --accent-ink: #05230f;
 
   /* ---- Neutrals / surfaces ---- */
+  --ink-990: #04080f;
   --ink-950: #070d18;
   --ink-900: #0b1220;
   --ink-850: #0e1626;
   --ink-800: #13223b;
   --ink-700: #1b2d4a;
   --ink-600: #26395a;
+  --ink-500: #33496f;
 
   --line: rgba(255, 255, 255, 0.09);
   --line-strong: rgba(255, 255, 255, 0.16);
+  --line-accent: color-mix(in srgb, var(--accent) 42%, transparent);
 
   --text: #f4f8ff;
   --text-soft: #c7d3e6;
@@ -50,6 +74,7 @@
   --glass: rgba(17, 28, 48, 0.72);
   --glass-strong: rgba(13, 22, 40, 0.86);
   --glass-line: rgba(255, 255, 255, 0.12);
+  --glass-blur: blur(16px) saturate(1.25);
 
   /* ---- Radius ---- */
   --r-xs: 8px;
@@ -59,36 +84,74 @@
   --r-xl: 28px;
   --r-pill: 999px;
 
-  /* ---- Shadows ---- */
+  /* ---- Spacing scale ---- */
+  --s-1: 4px;  --s-2: 8px;   --s-3: 12px; --s-4: 16px;
+  --s-5: 20px; --s-6: 24px;  --s-7: 32px; --s-8: 40px;
+
+  /* ---- Type scale ---- */
+  --fs-xs: 11.5px;
+  --fs-sm: 13px;
+  --fs-base: 15px;
+  --fs-md: 17px;
+  --fs-lg: 20px;
+  --fs-xl: 24px;
+  --fs-2xl: 30px;
+  --fs-3xl: 40px;
+  --tracking-tight: -0.025em;
+  --tracking-wide: 0.14em;
+
+  /* ---- Shadows / elevation ---- */
   --sh-sm: 0 4px 14px rgba(0, 0, 0, 0.28);
   --sh-md: 0 10px 30px rgba(0, 0, 0, 0.38);
   --sh-lg: 0 22px 60px rgba(0, 0, 0, 0.5);
+  --sh-xl: 0 34px 90px rgba(0, 0, 0, 0.62);
   --sh-inset: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --sh-rim: inset 0 1px 0 rgba(255, 255, 255, 0.14), inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+  --sh-accent: 0 12px 34px var(--accent-glow);
 
   /* ---- Gradients ---- */
   --grad-green: linear-gradient(180deg, var(--green-400), var(--green-600));
   --grad-blue: linear-gradient(180deg, var(--blue-400), var(--blue-600));
   --grad-gold: linear-gradient(180deg, var(--gold-300), var(--gold-500));
   --grad-red: linear-gradient(180deg, var(--red-400), var(--red-600));
+  --grad-accent: linear-gradient(180deg, var(--accent), var(--accent-2));
   --grad-dark: linear-gradient(180deg, #16233c, #0d1526);
   --grad-hero: radial-gradient(120% 90% at 50% -10%, #1b3a63 0%, #0d1a30 45%, #070f1e 100%);
   --grad-celebrate: radial-gradient(120% 100% at 50% 0%, #3b2a72 0%, #241a4a 40%, #120f27 100%);
+  --grad-sheen: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.35) 48%, transparent 62%);
+  --grad-metal-silver: linear-gradient(180deg, #f1f5f9, #94a3b8 60%, #64748b);
+  --grad-metal-bronze: linear-gradient(180deg, #f6c9a4, #b5794f 62%, #8a5733);
 
   /* ---- Motion ---- */
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-spring: cubic-bezier(0.16, 1.24, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
   --t-fast: 0.16s;
   --t: 0.28s;
   --t-slow: 0.5s;
+  --t-scene: 0.9s;
+
+  /* ---- Layers ---- */
+  --z-scene: 0;
+  --z-app: 2;
+  --z-modal: 40;
+  --z-hud: 50;
+  --z-fx: 55;
+  --z-toast: 60;
+  --z-cinematic: 70;
 
   /* ---- Layout ---- */
-  --app-max: 460px;      /* mobile-first frame width */
+  --app-max: 460px;
   --admin-max: 1240px;
   --font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
     "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-num: "Pretendard Variable", Pretendard, ui-rounded, system-ui, sans-serif;
 }
 
-/* Clean, valid token values (override any stray typos above) */
-:root {
-  --text-dim: #64769a;
-}
+/* 팀전/함정 화면에서 액센트를 통째로 갈아끼움 */
+[data-accent="blue"]   { --accent: var(--blue-400);   --accent-2: var(--blue-600);   --accent-glow: var(--blue-glow);   --accent-ink: #041530; }
+[data-accent="green"]  { --accent: var(--green-400);  --accent-2: var(--green-600);  --accent-glow: var(--green-glow);  --accent-ink: #05230f; }
+[data-accent="gold"]   { --accent: var(--gold-400);   --accent-2: var(--gold-600);   --accent-glow: var(--gold-glow);   --accent-ink: #3a2600; }
+[data-accent="red"]    { --accent: var(--red-400);    --accent-2: var(--red-600);    --accent-glow: var(--red-glow);    --accent-ink: #2b0606; }
+[data-accent="purple"] { --accent: var(--purple-400); --accent-2: var(--purple-600); --accent-glow: var(--purple-glow); --accent-ink: #1b0740; }

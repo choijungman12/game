@@ -165,3 +165,67 @@ textarea.inp { resize: vertical; min-height: 70px; }
   .main { padding: 18px 16px 60px; }
   .table .qtext { max-width: 200px; }
 }
+
+/* ==========================================================================
+   추가: 토스트 (밝은 테마) + 마감 디테일
+   ========================================================================== */
+.toast-root {
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+  z-index: 80; display: flex; flex-direction: column; gap: 8px; align-items: center;
+  pointer-events: none; width: min(92vw, 460px);
+}
+.toast {
+  pointer-events: auto; display: flex; align-items: center; gap: 9px;
+  background: #ffffff; border: 1px solid var(--a-line); border-left: 4px solid var(--a-brand);
+  color: var(--a-ink); padding: 12px 18px; border-radius: 12px;
+  font-weight: 700; font-size: 14px; box-shadow: 0 18px 44px rgba(15,23,42,0.22);
+  animation: a-toast-in 0.34s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+.toast .t-ic { font-size: 15px; }
+.toast.out { animation: a-toast-out 0.28s ease forwards; }
+.toast--ok { border-left-color: var(--a-green); }
+.toast--err { border-left-color: var(--a-red); }
+.toast--gold { border-left-color: var(--a-gold); }
+@keyframes a-toast-in { from { opacity: 0; transform: translateY(14px) scale(0.96); } }
+@keyframes a-toast-out { to { opacity: 0; transform: translateY(10px); } }
+
+/* 카드/타일 마감 */
+.card { transition: box-shadow .22s ease, transform .22s ease; }
+.card:hover { box-shadow: 0 10px 28px rgba(20,30,60,0.09); }
+.stat { position: relative; overflow: hidden; transition: transform .2s cubic-bezier(0.22,1,0.36,1), box-shadow .2s; }
+.stat::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--a-brand); opacity: .85; }
+.stat.g::before { background: var(--a-green); }
+.stat.b::before { background: var(--a-blue); }
+.stat.o::before { background: var(--a-gold); }
+.stat.p::before { background: var(--a-purple); }
+.stat:hover { transform: translateY(-3px); box-shadow: 0 14px 32px rgba(20,30,60,0.12); }
+
+/* 버튼 광택 */
+.btn { position: relative; overflow: hidden; }
+.btn::before {
+  content: ""; position: absolute; inset: -50% -60%;
+  background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.45) 48%, transparent 62%);
+  transform: translateX(-130%) rotate(9deg); transition: transform .55s cubic-bezier(0.65,0,0.35,1);
+}
+.btn:hover::before { transform: translateX(130%) rotate(9deg); }
+.btn.ghost::before { display: none; }
+
+/* 사이드 내비 활성 표시 */
+.nav a { position: relative; }
+.nav a.active::before {
+  content: ""; position: absolute; left: -14px; top: 8px; bottom: 8px; width: 3px;
+  border-radius: 0 3px 3px 0; background: #fff; opacity: .9;
+}
+
+/* 라이브 진행 QR 카드 */
+.qr-admin { position: relative; overflow: hidden; }
+.qr-admin::after {
+  content: ""; position: absolute; left: 10px; right: 10px; height: 3px; border-radius: 3px;
+  background: linear-gradient(90deg, transparent, var(--a-green), transparent);
+  box-shadow: 0 0 12px var(--a-green); animation: a-qr-scan 2.6s cubic-bezier(0.65,0,0.35,1) infinite;
+}
+@keyframes a-qr-scan { 0%,100% { top: 10px; opacity: 0; } 12% { opacity: 1; } 50% { top: calc(100% - 13px); opacity: 1; } 88% { opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .qr-admin::after, .btn::before { animation: none !important; transition: none !important; }
+}

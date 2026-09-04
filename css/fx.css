@@ -1,0 +1,256 @@
+/* ==========================================================================
+   VFX 레이어 — 화면 연출 전용 스타일
+   js/fx.js 가 만들어 붙이는 요소들의 스타일. 게임 레이아웃과 분리해서 관리.
+   ========================================================================== */
+
+/* ---- 전역 FX 루트 ---- */
+.fx-layer {
+  position: fixed; inset: 0; pointer-events: none;
+  z-index: var(--z-fx); overflow: hidden;
+}
+.fx-layer--under { z-index: 1; }
+.fx-layer--over  { z-index: var(--z-cinematic); }
+
+/* ==========================================================================
+   1. 화면 플래시 / 비네트
+   ========================================================================== */
+.fx-flash {
+  position: absolute; inset: 0;
+  background: radial-gradient(70% 60% at 50% 45%, var(--fx-color, #fff), transparent 70%);
+  opacity: 0; mix-blend-mode: screen;
+  animation: fx-flash-out var(--fx-dur, 480ms) var(--ease) forwards;
+}
+@keyframes fx-flash-out {
+  0%   { opacity: 0; }
+  12%  { opacity: var(--fx-peak, 0.6); }
+  100% { opacity: 0; }
+}
+
+.fx-vignette {
+  position: absolute; inset: 0; opacity: 0;
+  box-shadow: inset 0 0 140px 40px var(--fx-color, rgba(239,68,68,0.65));
+  animation: fx-vig var(--fx-dur, 700ms) var(--ease) forwards;
+}
+@keyframes fx-vig { 0% { opacity: 0; } 22% { opacity: 1; } 100% { opacity: 0; } }
+
+/* ==========================================================================
+   2. 충격파 링 (정답 / 매입 / 1등)
+   ========================================================================== */
+.fx-shock {
+  position: absolute; left: 0; top: 0;
+  width: var(--fx-size, 40px); height: var(--fx-size, 40px);
+  margin: calc(var(--fx-size, 40px) / -2) 0 0 calc(var(--fx-size, 40px) / -2);
+  border-radius: 50%;
+  border: var(--fx-w, 3px) solid var(--fx-color, #ffe27a);
+  box-shadow: 0 0 24px var(--fx-color, #ffe27a), inset 0 0 18px var(--fx-color, #ffe27a);
+  opacity: 0;
+  animation: fx-shock var(--fx-dur, 720ms) var(--ease) forwards;
+}
+@keyframes fx-shock {
+  0%   { transform: scale(0.2); opacity: 0.95; }
+  70%  { opacity: 0.35; }
+  100% { transform: scale(var(--fx-scale, 9)); opacity: 0; }
+}
+
+/* ==========================================================================
+   3. 점수 팝업 (+150 / -100 / 통행료 …)
+   ========================================================================== */
+.fx-pop {
+  position: absolute; left: 0; top: 0;
+  transform: translate(-50%, -50%);
+  font-family: var(--font-num);
+  font-size: var(--fx-size, 28px); font-weight: 900;
+  letter-spacing: var(--tracking-tight);
+  color: var(--fx-color, var(--gold-300));
+  text-shadow: 0 3px 0 rgba(0,0,0,0.45), 0 0 22px var(--fx-glow, var(--gold-glow));
+  white-space: nowrap;
+  animation: fx-pop-rise var(--fx-dur, 1150ms) var(--ease) forwards;
+}
+@keyframes fx-pop-rise {
+  0%   { opacity: 0; transform: translate(-50%, -30%) scale(0.5); }
+  18%  { opacity: 1; transform: translate(-50%, -60%) scale(1.18); }
+  32%  { transform: translate(-50%, -62%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -190%) scale(0.95); }
+}
+.fx-pop--big { --fx-size: 42px; }
+.fx-pop--sm  { --fx-size: 20px; }
+
+/* ==========================================================================
+   4. 화면 흔들림 (오답 / 함정 / 주사위 착지)
+   ========================================================================== */
+.fx-shake { animation: fx-shake var(--fx-dur, 420ms) cubic-bezier(.36,.07,.19,.97) both; }
+@keyframes fx-shake {
+  10%, 90% { transform: translate3d(calc(var(--fx-amp, 6px) * -0.35), 0, 0); }
+  20%, 80% { transform: translate3d(calc(var(--fx-amp, 6px) * 0.7), 0, 0); }
+  30%, 50%, 70% { transform: translate3d(calc(var(--fx-amp, 6px) * -1), calc(var(--fx-amp, 6px) * 0.25), 0); }
+  40%, 60% { transform: translate3d(var(--fx-amp, 6px), calc(var(--fx-amp, 6px) * -0.25), 0); }
+}
+
+/* ==========================================================================
+   5. 1등 시네마틱 — 광선 + 스포트라이트 + 오라
+   ========================================================================== */
+.fx-rays {
+  position: absolute; left: 50%; top: var(--fx-y, 34%);
+  width: 190vmax; height: 190vmax; transform: translate(-50%, -50%);
+  background: repeating-conic-gradient(
+    from 0deg,
+    var(--fx-color, rgba(255,226,122,0.22)) 0deg 5deg,
+    transparent 5deg 16deg
+  );
+  mask-image: radial-gradient(closest-side, #000 8%, rgba(0,0,0,0.55) 34%, transparent 68%);
+  -webkit-mask-image: radial-gradient(closest-side, #000 8%, rgba(0,0,0,0.55) 34%, transparent 68%);
+  opacity: 0; mix-blend-mode: screen;
+  animation: fx-rays-in 620ms var(--ease) forwards, fx-rays-spin 26s linear infinite;
+}
+@keyframes fx-rays-in { to { opacity: 1; } }
+@keyframes fx-rays-spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+.fx-rays.out { animation: fx-rays-out 520ms var(--ease) forwards, fx-rays-spin 26s linear infinite; }
+@keyframes fx-rays-out { to { opacity: 0; } }
+
+.fx-spot {
+  position: absolute; left: 50%; top: -10%;
+  width: 78vmin; height: 120vmin; transform: translateX(-50%);
+  background: linear-gradient(180deg, var(--fx-color, rgba(255,226,122,0.3)), transparent 72%);
+  clip-path: polygon(41% 0, 59% 0, 100% 100%, 0 100%);
+  filter: blur(14px); mix-blend-mode: screen; opacity: 0;
+  animation: fx-spot-in 700ms var(--ease) forwards;
+}
+@keyframes fx-spot-in { to { opacity: 1; } }
+
+/* 요소에 붙는 후광 */
+.fx-aura { position: relative; }
+.fx-aura::before {
+  content: ""; position: absolute; inset: -22%;
+  border-radius: 50%; z-index: -1;
+  background: radial-gradient(circle, var(--fx-color, rgba(255,210,74,0.55)), transparent 68%);
+  animation: fx-aura-breathe 2.4s ease-in-out infinite;
+}
+@keyframes fx-aura-breathe { 0%,100% { transform: scale(0.94); opacity: 0.7; } 50% { transform: scale(1.08); opacity: 1; } }
+
+/* ==========================================================================
+   6. 광택 스윕 (버튼 / 메달 / 브랜드 타이틀)
+   ========================================================================== */
+.fx-sheen { position: relative; overflow: hidden; }
+.fx-sheen::before {
+  content: ""; position: absolute; inset: -40% -60%;
+  background: var(--grad-sheen);
+  transform: translateX(-120%) rotate(8deg);
+  animation: fx-sheen-sweep var(--fx-dur, 2.8s) var(--ease-in-out) var(--fx-delay, 0s) infinite;
+  pointer-events: none;
+}
+@keyframes fx-sheen-sweep {
+  0%, 62% { transform: translateX(-120%) rotate(8deg); }
+  86%, 100% { transform: translateX(120%) rotate(8deg); }
+}
+.fx-sheen--once::before { animation-iteration-count: 1; }
+
+/* ==========================================================================
+   7. 클릭 리플
+   ========================================================================== */
+.fx-ripple {
+  position: absolute; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, var(--fx-color, rgba(255,255,255,0.55)), transparent 70%);
+  transform: translate(-50%, -50%) scale(0);
+  animation: fx-ripple 620ms var(--ease) forwards;
+}
+@keyframes fx-ripple { to { transform: translate(-50%, -50%) scale(1); opacity: 0; } }
+
+/* ==========================================================================
+   8. 콤보 / 연속 정답 배지
+   ========================================================================== */
+.fx-combo {
+  position: fixed; left: 50%; top: 22%;
+  transform: translate(-50%, -50%);
+  z-index: var(--z-cinematic); pointer-events: none;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  animation: fx-combo 1400ms var(--ease-back) forwards;
+}
+.fx-combo .cn {
+  font-size: 54px; font-weight: 900; letter-spacing: -0.05em;
+  background: linear-gradient(180deg, #fff6d8, var(--gold-400) 52%, var(--gold-600));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 6px 18px var(--gold-glow));
+}
+.fx-combo .cl { font-size: 13px; font-weight: 900; letter-spacing: 0.24em; color: var(--gold-200); text-transform: uppercase; }
+@keyframes fx-combo {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.4) rotate(-8deg); }
+  20%  { opacity: 1; transform: translate(-50%, -50%) scale(1.12) rotate(2deg); }
+  34%  { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+  78%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -80%) scale(0.94); }
+}
+
+/* ==========================================================================
+   9. 화면 전환 와이프
+   ========================================================================== */
+.fx-wipe {
+  position: absolute; inset: 0;
+  background: linear-gradient(100deg, transparent 0%, var(--fx-color, #0b1220) 24%, var(--fx-color, #0b1220) 76%, transparent 100%);
+  transform: translateX(-140%);
+  animation: fx-wipe 720ms var(--ease-in-out) forwards;
+}
+@keyframes fx-wipe { to { transform: translateX(140%); } }
+
+/* ==========================================================================
+   10. 타이머 링 (SVG)
+   ========================================================================== */
+.timer-ring { position: relative; width: 54px; height: 54px; flex: none; margin-left: auto; }
+.timer-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); display: block; }
+.timer-ring .tr-bg { fill: none; stroke: rgba(255,255,255,0.1); stroke-width: 5; }
+.timer-ring .tr-fg {
+  fill: none; stroke: var(--tr-color, var(--green-400)); stroke-width: 5; stroke-linecap: round;
+  filter: drop-shadow(0 0 6px var(--tr-glow, var(--green-glow)));
+  transition: stroke-dashoffset 140ms linear, stroke 400ms var(--ease);
+}
+.timer-ring .tr-num {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  font-size: 19px; font-weight: 900; font-variant-numeric: tabular-nums;
+  color: var(--tr-color, var(--green-300)); letter-spacing: -0.03em;
+  transition: color 400ms var(--ease);
+}
+.timer-ring.is-warn { --tr-color: var(--gold-400); --tr-glow: var(--gold-glow); }
+.timer-ring.is-danger { --tr-color: var(--red-400); --tr-glow: var(--red-glow); animation: tr-pulse 0.62s ease-in-out infinite; }
+@keyframes tr-pulse { 50% { transform: scale(1.09); } }
+
+/* ==========================================================================
+   11. 정답 / 오답 스탬프
+   ========================================================================== */
+.fx-stamp {
+  position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%) rotate(-14deg);
+  font-size: 15px; font-weight: 900; letter-spacing: 0.18em;
+  padding: 8px 18px; border-radius: var(--r-sm);
+  border: 3px solid currentColor; color: var(--fx-color, var(--green-400));
+  background: rgba(6, 12, 24, 0.55); backdrop-filter: blur(3px);
+  animation: fx-stamp 900ms var(--ease-back) forwards;
+  pointer-events: none; z-index: 3;
+}
+@keyframes fx-stamp {
+  0%   { opacity: 0; transform: translate(-50%, -50%) rotate(-14deg) scale(2.4); }
+  18%  { opacity: 1; transform: translate(-50%, -50%) rotate(-14deg) scale(0.95); }
+  30%  { transform: translate(-50%, -50%) rotate(-14deg) scale(1.04); }
+  74%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(-14deg) scale(1); }
+}
+
+/* ==========================================================================
+   12. 리더보드 순위 변동 배지
+   ========================================================================== */
+.rank-delta {
+  font-size: 11px; font-weight: 900; padding: 1px 6px; border-radius: var(--r-pill);
+  display: inline-flex; align-items: center; gap: 2px; line-height: 1.5;
+  animation: fx-delta-in 520ms var(--ease-back) both;
+}
+.rank-delta.up { color: var(--green-300); background: rgba(34,197,94,0.18); }
+.rank-delta.down { color: var(--red-300); background: rgba(239,68,68,0.16); }
+.rank-delta.new { color: var(--gold-300); background: rgba(255,210,74,0.16); }
+@keyframes fx-delta-in { from { opacity: 0; transform: scale(0.4) translateY(6px); } }
+
+/* ==========================================================================
+   13. 접근성 — 모션 최소화
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .fx-rays, .fx-spot, .fx-sheen::before, .fx-aura::before,
+  .fx-shake, .timer-ring.is-danger { animation: none !important; }
+  .fx-pop { animation-duration: 700ms !important; }
+}

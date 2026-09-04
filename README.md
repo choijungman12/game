@@ -33,7 +33,12 @@
 
 ### 🎨 연출 (VFX)
 - 화면별 **배경음악(BGM)** 과 **효과음(SFX)** — Web Audio API로 실시간 합성(외부 음원 파일 불필요, 오프라인 동작)
-- **콘페티**, 1등 왕관 연출, 마스코트 애니메이션, 3D 카메라, 카운트다운 등
+- **파티클 엔진**: 콘페티 / 리본 / 별 / 금화(₩) / 좌우 대포 / 분수 / 비 — 바람·항력·펄럭임 물리
+- **화면 연출**: 플래시 · 비네트 · 충격파 링 · 점수 팝업(+150) · 화면 흔들림 · 콤보 배지 · 전환 와이프
+- **1등 시네마틱**: 회전하는 광선(god ray) + 스포트라이트 + 후광 + 금색 콘페티 동시 연출
+- **3D 보드 연출**: 포물선 주사위 투척 → 2회 바운스 → 착지 먼지링 · 토큰 스쿼시/스트레치 점프 ·
+  건물 스프링 상승 · 코인 스프라이트 · 타일 펄스 · 카메라 자동 추적/줌 · 함정 적색 경보 조명
+- **접근성**: `prefers-reduced-motion` 을 전 연출에서 존중(파티클 수 축소·애니메이션 정지)
 - 우측 상단 🔊 버튼으로 소리 On/Off
 
 ---
@@ -100,10 +105,11 @@ export const FIREBASE = {
 index.html          참가자 게임 (SPA)
 admin.html          관리자 콘솔
 css/
-  tokens.css        디자인 토큰(색/간격/그림자)
-  components.css     공용 컴포넌트
-  screens.css        게임 화면 스타일 + 배경 씬
-  admin.css          관리자(밝은 테마)
+  tokens.css        디자인 토큰(팔레트·타입/간격 스케일·그림자·모션·레이어)
+  components.css    공용 컴포넌트(버튼·카드·입력·칩·토스트·프로그레스)
+  fx.css            VFX 레이어(플래시·충격파·점수팝업·광선·콤보·타이머링)
+  screens.css       게임 화면 스타일 + 다층 배경 씬
+  admin.css         관리자(밝은 테마)
 js/
   config.js          브랜드·기본설정·카테고리·Firebase 설정
   data.js            문제/설정/참가자 데이터 접근(localStorage)
@@ -111,16 +117,83 @@ js/
   engine.js          점수·랭킹·봇 시뮬레이션
   store.js           라이브 Room(Local/Firebase 드라이버)
   audio.js           BGM/SFX 신스(Web Audio)
-  ui.js              DOM·마스코트·콘페티·토스트
+  fx.js              VFX 엔진(파티클·화면연출·카운트업·FLIP 순위이동)
+  ui.js              DOM 유틸·씬 테마/액센트·마스코트·토스트·아바타
   qr.js              QR 코드
   screens.js         게임 화면 빌더(솔로/라이브 공용)
   app.js             메인 컨트롤러(라우터·개인전 엔진)
-  team.js            팀전 3D 보드(Three.js)
+  team.js            팀전 3D 보드(Three.js) + 보드 VFX
   live.js            라이브 호스트/참가자
 tools/
   build-questions.js 문제 데이터 생성 스크립트
 data/questions.json  문제 백업(JSON)
 ```
+
+---
+
+## 🎨 디자인 시스템
+
+`css/tokens.css` 한 곳에서 전체 톤을 바꿀 수 있습니다.
+
+| 그룹 | 토큰 | 용도 |
+| --- | --- | --- |
+| 브랜드 | `--green-*` `--blue-*` `--gold-*` `--red-*` `--purple-*` `--cyan-*` | 팔레트(각 색상 `-glow` 변형 포함) |
+| 액센트 | `--accent` `--accent-2` `--accent-glow` `--accent-ink` | **문항 카테고리 색으로 UI 전체가 물듦** |
+| 표면 | `--ink-*` `--glass*` `--line*` | 배경/유리 패널/구분선 |
+| 타입 | `--fs-xs` … `--fs-3xl`, `--tracking-*` | 폰트 스케일 |
+| 간격 | `--s-1` … `--s-8` | 4px 배수 스케일 |
+| 그림자 | `--sh-sm/md/lg/xl` `--sh-rim` `--sh-accent` | 고도(elevation) |
+| 모션 | `--ease` `--ease-back` `--ease-spring` `--t-fast/t/t-slow/t-scene` | 이징·지속시간 |
+| 레이어 | `--z-scene/app/modal/hud/fx/toast/cinematic` | z-index 질서 |
+
+### 액센트 시스템
+문제가 바뀔 때 `setAccent(카테고리색)` 이 호출되어 **문제 카드·보기 hover·진행바·해설
+바·버튼 글로우**가 그 카테고리 색으로 동시에 바뀝니다. 화면 단위로는
+`[data-accent="blue|green|gold|red|purple"]` 로도 전환할 수 있습니다.
+
+### 배경 씬
+`#bg-scene` 은 10겹 레이어(별 → 오로라 → 하늘 → 해+갓레이 → 구름 → 언덕 →
+**토지 필지 원근 그리드** → 스카이라인(창문 점멸) → 테크 그리드 → 안개)로 구성되며,
+`setSceneTheme("hero" | "quiz" | "celebrate" | "team" | "trap")` 으로 통째 전환됩니다.
+
+---
+
+## ✨ VFX API (`js/fx.js`)
+
+```js
+import { fx, confetti } from "./fx.js";
+
+// 파티클
+confetti.burst({ count: 90 });        // 폭발
+confetti.fountain(0.5);               // 분수
+confetti.cannon("left");              // 좌/우 대포
+confetti.coins(0.5, 0.6);             // 금화(₩)
+confetti.sparkles(0.5, 0.4);          // 반짝임
+confetti.rain(); confetti.stopRain();
+confetti.burstAtEl(node);             // DOM 요소 위치에서 터뜨리기
+
+// 화면 연출
+fx.flash("rgba(52,224,138,0.8)");     // 플래시
+fx.vignette("rgba(239,68,68,0.6)");   // 비네트
+fx.shockwaveAt(node, { color: "#34e08a" });
+fx.popAt(node, "+150", { color: "#7ef0b2" });
+fx.shake(target, 9, 460);             // 화면 흔들림
+fx.combo(5);                          // 연속 정답 배지
+fx.cinematic(true);                   // 광선 + 스포트라이트 (false 로 해제)
+fx.wipe("#0b1220");                   // 화면 전환 와이프
+
+// 유틸
+fx.countUp(node, 0, 1500, 800);       // 숫자 카운트업
+fx.flip(list, ".lb-row", reorderFn);  // 순위 변동 슬라이드(FLIP)
+
+// 게임 이벤트 프리셋
+fx.correct(node, 150);  fx.wrong(node);  fx.timeout();
+fx.champion();  fx.championEnd();  fx.finale();
+fx.money(0.5, 0.6, 300);  fx.lose(0.5, 0.6, 200);  fx.trapAlert();
+```
+
+모든 연출은 `prefers-reduced-motion: reduce` 를 감지해 자동으로 축소/비활성화되고,
+파티클은 화면 크기에 따라 최대 개수를 제한(모바일 260 / 데스크톱 460)합니다.
 
 ---
 

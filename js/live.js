@@ -17,7 +17,15 @@ const KEYS = ["A", "B", "C", "D"];
 /* ==========================================================================
    호스트 패널 (관리자 콘솔에 마운트)
    ========================================================================== */
+const ACTIVE_KEY = "notl.hostcode";
+
 export function mountHostPanel(host) {
+  const active = localStorage.getItem(ACTIVE_KEY);
+  if (active) { resumeHost(host, active); return; }
+  renderStartCard(host);
+}
+
+function renderStartCard(host) {
   host.innerHTML = "";
   const settings = getSettings();
   const startCard = el("div", {},
@@ -28,10 +36,12 @@ export function mountHostPanel(host) {
         el("div", { class: "field" }, el("label", {}, "제한 시간"), roLabel(settings.timeLimit + "초")),
         el("div", { class: "field" }, el("label", {}, "카테고리"), roLabel((settings.categories && settings.categories.length) ? settings.categories.join(", ") : "전체")),
         el("button", { class: "btn green", onClick: () => startHost(host) }, "📡 라이브 세션 시작")),
-      el("div", { class: "hint" }, "‘게임 설정’에서 문항 수·시간·카테고리를 먼저 조정할 수 있습니다.")));
+      el("div", { class: "hint" }, "‘게임 설정’에서 문항 수·시간·카테고리를 먼저 조정한 뒤 시작하세요. 시작하면 QR과 참가자 대기실이 나타납니다.")));
   host.append(startCard);
 }
 function roLabel(v) { return el("div", { style: { padding: "10px 12px", background: "#f1f5f9", borderRadius: "10px", fontWeight: "700" } }, v); }
+function joinUrlFor(code) { const u = new URL(location.href); u.pathname = u.pathname.replace(/admin\.html$/, "index.html"); u.hash = ""; u.search = "?room=" + code; return u.toString(); }
+function clock(ms) { try { return new Date(ms).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }); } catch (e) { return ""; } }
 
 async function startHost(host) {
   const settings = getSettings();
@@ -44,27 +54,41 @@ async function startHost(host) {
     questions: questions.map((q) => ({ id: q.id, category: q.category, question: q.question, options: q.options, answerIndex: q.answerIndex, explanation: q.explanation, difficulty: q.difficulty })),
     currentIndex: -1, questionStartAt: 0, players: {}, roundResults: {},
   });
+  localStorage.setItem(ACTIVE_KEY, code);
+  openHostSession(host, room, code);
+}
 
-  const joinUrl = new URL(location.href);
-  joinUrl.pathname = joinUrl.pathname.replace(/admin\.html$/, "index.html");
-  joinUrl.hash = ""; joinUrl.search = "?room=" + code;
-  const url = joinUrl.toString();
+async function resumeHost(host, code) {
+  host.innerHTML = "";
+  host.append(el("div", { class: "hint" }, "진행 중인 세션을 불러오는 중..."));
+  const room = await Room.open(code);
+  const cur = await room.get();
+  if (!cur) { localStorage.removeItem(ACTIVE_KEY); renderStartCard(host); return; }
+  openHostSession(host, room, code);
+}
 
+function openHostSession(host, room, code) {
+  const url = joinUrlFor(code);
   host.innerHTML = "";
   const qrBox = el("div", { class: "qr-admin" });
   const codeEl = el("div", { style: { fontSize: "34px", fontWeight: "900", letterSpacing: "6px", color: "var(--a-brand)" } }, code);
-  const lobby = el("div", { class: "grid", style: { gridTemplateColumns: "repeat(auto-fill,minmax(120px,1fr))", gap: "8px" } });
+  const lobby = el("div", { class: "roster" });
+  const countEl = el("span", { id: "lobby-count", class: "tag blue" }, "0명 입장");
   const controls = el("div", { class: "mt-16", style: { display: "flex", gap: "10px", flexWrap: "wrap" } });
   const stage = el("div", { class: "mt-16" });
 
   host.append(
-    el("div", { class: "grid cols-2", style: { alignItems: "center" } },
-      el("div", { style: { textAlign: "center" } }, qrBox, el("div", { class: "hint", style: { marginTop: "8px" } }, "휴대폰으로 QR 스캔"), codeEl),
+    el("div", { class: "grid cols-2", style: { alignItems: "start" } },
+      el("div", { style: { textAlign: "center" } },
+        qrBox,
+        el("div", { class: "hint", style: { marginTop: "8px" } }, "휴대폰으로 QR 스캔 → 이름·휴대폰 입력 → 입장"),
+        codeEl,
+        el("div", { class: "hint", style: { marginTop: "4px", wordBreak: "break-all" } }, url)),
       el("div", {},
-        el("h2", {}, "참가자 대기실"),
-        el("p", { class: "hint" }, el("span", {}, "접속 링크: "), el("code", { style: { wordBreak: "break-all" } }, url)),
-        el("div", { id: "lobby-count", class: "tag blue", style: { marginBottom: "10px" } }, "0명 접속"),
+        el("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" } },
+          el("h2", { style: { margin: 0 } }, "참가자 대기실"), countEl),
         lobby)),
+    el("div", { class: "hint", style: { marginTop: "10px" } }, "모든 참가자가 입장하면 아래 ‘게임 시작’을 누르세요. 관리자 페이지를 벗어났다 돌아와도 세션은 유지됩니다."),
     controls, stage);
   makeQR(qrBox, url, { cellSize: 5 });
 
@@ -75,16 +99,46 @@ async function startHost(host) {
   const endBtn = el("button", { class: "btn red", onClick: () => hostEnd() }, "종료");
   controls.append(startBtn, revealBtn, nextBtn, endBtn);
 
+  function syncControls() {
+    if (!state) return;
+    const st = state.status;
+    startBtn.disabled = st !== "lobby";
+    const revealed = !!(state.roundResults && state.roundResults[state.currentIndex]);
+    revealBtn.disabled = st !== "question" || revealed;
+    nextBtn.disabled = st !== "reveal";
+  }
+
   room.onChange((s) => { state = s; renderHost(); });
 
   function renderHost() {
     if (!state) return;
-    const players = Object.values(state.players || {});
-    document.getElementById("lobby-count").textContent = players.length + "명 접속";
+    const players = Object.values(state.players || {}).sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0));
+    countEl.textContent = players.length + "명 입장";
+    syncControls();
     lobby.innerHTML = "";
-    players.forEach((p) => lobby.append(el("div", { class: "tag gray", style: { justifyContent: "center" } }, `${avatarEmoji(p.name)} ${esc(p.name)}`)));
+    if (!players.length) lobby.append(el("div", { class: "roster-empty" }, "아직 입장한 참가자가 없습니다.\nQR을 스캔해 이름·휴대폰을 입력하면 실시간으로 표시됩니다."));
+    players.forEach((p, i) => lobby.append(el("div", { class: "roster-item" },
+      el("span", { class: "ri-no" }, String(i + 1)),
+      el("span", { class: "ri-av" }, avatarEmoji(p.name)),
+      el("div", { class: "ri-info" },
+        el("div", { class: "ri-name" }, esc(p.name)),
+        el("div", { class: "ri-phone" }, p.phone ? ("📞 " + esc(p.phone)) : "번호 미입력")),
+      el("span", { class: "ri-time" }, p.joinedAt ? clock(p.joinedAt) : "")
+    )));
 
     if (state.status === "lobby") { stage.innerHTML = ""; return; }
+    if (state.status === "ended") {
+      stage.innerHTML = "";
+      const ranked = rankPlayers(players.map((p) => ({ ...p })));
+      stage.append(el("div", { class: "card" }, el("h2", {}, "🏁 최종 순위"),
+        el("table", { class: "table" }, el("tbody", {}, ...ranked.map((p, i) =>
+          el("tr", {},
+            el("td", { style: { width: "40px" } }, ["🥇", "🥈", "🥉"][i] || String(i + 1)),
+            el("td", {}, esc(p.name)),
+            el("td", { class: "hint" }, p.phone ? esc(p.phone) : ""),
+            el("td", { style: { width: "84px" } }, el("b", {}, fmt(p.score) + "점"))))))));
+      return;
+    }
     const q = state.questions[state.currentIndex];
     if (!q) return;
     stage.innerHTML = "";
@@ -154,9 +208,12 @@ async function startHost(host) {
   async function hostEnd() {
     clearTimeout(autoT);
     await room.update((s) => { if (!s) return s; s.status = "ended"; return s; });
+    localStorage.removeItem(ACTIVE_KEY);
     revealBtn.disabled = true; nextBtn.disabled = true; startBtn.disabled = true;
     fx.finale(); sfx("win");
     toast("게임을 종료했습니다", "ok");
+    controls.innerHTML = "";
+    controls.append(el("button", { class: "btn green", onClick: () => renderStartCard(host) }, "🔄 새 세션 시작"));
   }
 }
 function tagCls(cat) { const m = catMeta(cat); return { "chip--blue": "blue", "chip--green": "green", "chip--gold": "gold", "chip--red": "red", "chip--purple": "purple" }[m.chip] || "gray"; }

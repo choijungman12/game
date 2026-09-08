@@ -20,6 +20,7 @@ const PAGES = [
   { id: "questions", icon: "📝", label: "문제 관리" },
   { id: "settings", icon: "⚙️", label: "게임 설정" },
   { id: "live", icon: "📡", label: "라이브 진행" },
+  { id: "players", icon: "🧑‍🤝‍🧑", label: "참가자 관리" },
   { id: "connect", icon: "🔌", label: "연동 설정" },
   { id: "team", icon: "🎲", label: "팀전 관리" },
   { id: "ranking", icon: "🏆", label: "랭킹 관리" },
@@ -64,7 +65,7 @@ function route() {
   document.getElementById("side")?.classList.remove("open");
   ({
     dashboard: pageDashboard, questions: pageQuestions, settings: pageSettings,
-    live: pageLive, connect: pageConnect, team: pageTeam, ranking: pageRanking, events: pageEvents, stats: pageStats,
+    live: pageLive, players: pagePlayers, connect: pageConnect, team: pageTeam, ranking: pageRanking, events: pageEvents, stats: pageStats,
   }[page] || pageDashboard)();
 }
 
@@ -403,6 +404,21 @@ function toggle(title, desc, on) {
    ========================================================================== */
 async function pageLive() {
   head("라이브 진행", "참가자들이 QR로 접속해 다같이 진행하는 실시간 모드입니다.");
+  const host = el("div", { class: "card" });
+  host.append(el("div", { class: "hint" }, "불러오는 중..."));
+  main.append(host);
+  try {
+    const live = await import("./live.js");
+    live.mountHostPanel(host);
+  } catch (e) {
+    console.error(e);
+    host.innerHTML = "";
+    host.append(el("div", { class: "hint" }, "라이브 모듈을 불러오지 못했습니다."));
+  }
+}
+
+async function pagePlayers() {
+  head("참가자 관리", "QR로 입장한 참가자(이름·휴대폰)를 실시간으로 확인하고, 모두 입장하면 게임을 시작하세요.");
   const host = el("div", { class: "card" });
   host.append(el("div", { class: "hint" }, "불러오는 중..."));
   main.append(host);

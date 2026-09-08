@@ -229,3 +229,15 @@ textarea.inp { resize: vertical; min-height: 70px; }
 @media (prefers-reduced-motion: reduce) {
   .qr-admin::after, .btn::before { animation: none !important; transition: none !important; }
 }
+
+/* ---- 라이브 참가자 명단(roster) ---- */
+.roster { display: flex; flex-direction: column; gap: 8px; max-height: 440px; overflow-y: auto; }
+.roster-empty { white-space: pre-line; text-align: center; color: var(--a-mut); font-size: 13.5px; padding: 22px 12px; border: 1px dashed #cdd7e6; border-radius: 12px; line-height: 1.6; }
+.roster-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--a-line); border-radius: 12px; background: #fff; animation: roster-in .28s ease; }
+@keyframes roster-in { from { opacity: 0; transform: translateY(6px); } }
+.roster-item .ri-no { width: 24px; height: 24px; flex: none; display: grid; place-items: center; border-radius: 7px; background: #eef2f8; font-weight: 800; font-size: 12.5px; color: var(--a-mut); }
+.roster-item .ri-av { font-size: 22px; flex: none; }
+.roster-item .ri-info { flex: 1; min-width: 0; }
+.roster-item .ri-name { font-weight: 800; font-size: 14.5px; }
+.roster-item .ri-phone { font-size: 12.5px; color: var(--a-mut); }
+.roster-item .ri-time { font-size: 12px; color: var(--a-mut); font-variant-numeric: tabular-nums; flex: none; }

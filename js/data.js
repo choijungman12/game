@@ -2,7 +2,7 @@
    데이터 접근 계층 — 문제/설정/참가자 (localStorage 기반, 관리자 수정 반영)
    ========================================================================== */
 import { DEFAULT_INDIVIDUAL, DEFAULT_TEAM } from "./questions.data.js";
-import { DEFAULT_SETTINGS, LS } from "./config.js";
+import { DEFAULT_SETTINGS, LS, DEFAULT_TEAM_TILES } from "./config.js";
 
 function read(key, fallback) {
   try {
@@ -52,6 +52,16 @@ export function saveSettings(patch) {
   write(LS.settings, next);
   return next;
 }
+
+/* ---- 팀전 보드 칸(지역명) — 관리자 수정 반영 ---- */
+const TILES_KEY = "notl.teamtiles.v1";
+export function getTeamTiles() {
+  const s = read(TILES_KEY, null);
+  if (s && Array.isArray(s) && s.length === DEFAULT_TEAM_TILES.length) return s;
+  return DEFAULT_TEAM_TILES.map((t) => ({ ...t }));
+}
+export function saveTeamTiles(list) { write(TILES_KEY, list); }
+export function resetTeamTiles() { try { localStorage.removeItem(TILES_KEY); } catch (e) {} return getTeamTiles(); }
 
 /* ---- 참가자(로컬 아이디) ---- */
 export function getPlayer() { return read(LS.player, null); }

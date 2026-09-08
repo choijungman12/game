@@ -26,6 +26,29 @@ export const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", 
 export const fmt = (n) => (n || 0).toLocaleString("ko-KR");
 export function vibrate(ms = 12) { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} }
 
+/* ---- 3D 틸트/패럴럭스 (포인터 + 자이로) ---- */
+function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+export function attachTilt(scene, opts = {}) {
+  if (!scene) return () => {};
+  const max = opts.max || 8, persp = opts.persp || 820, layers = opts.layers || [];
+  let raf = null, gx = 0, gy = 0, tx = 0, ty = 0;
+  const render = () => {
+    tx += (gx - tx) * 0.16; ty += (gy - ty) * 0.16;
+    scene.style.transform = `perspective(${persp}px) rotateX(${(-ty * max).toFixed(2)}deg) rotateY(${(tx * max).toFixed(2)}deg)`;
+    for (const L of layers) L.el.style.transform = `translateZ(${L.z || 0}px) translate3d(${(tx * (L.p || 0)).toFixed(1)}px, ${(ty * (L.p || 0)).toFixed(1)}px, 0)`;
+    if (Math.abs(gx - tx) > 0.001 || Math.abs(gy - ty) > 0.001) raf = requestAnimationFrame(render); else raf = null;
+  };
+  const sched = () => { if (!raf) raf = requestAnimationFrame(render); };
+  const onMove = (e) => { const r = scene.getBoundingClientRect(); gx = clamp((e.clientX - r.left) / r.width - 0.5, -0.5, 0.5); gy = clamp((e.clientY - r.top) / r.height - 0.5, -0.5, 0.5); sched(); };
+  const onLeave = () => { gx = 0; gy = 0; sched(); };
+  const onOrient = (e) => { if (e.gamma == null) return; gx = clamp(e.gamma / 45, -0.5, 0.5); gy = clamp((e.beta - 45) / 60, -0.5, 0.5); sched(); };
+  scene.addEventListener("pointermove", onMove);
+  scene.addEventListener("pointerleave", onLeave);
+  window.addEventListener("deviceorientation", onOrient);
+  render();
+  return () => { scene.removeEventListener("pointermove", onMove); scene.removeEventListener("pointerleave", onLeave); window.removeEventListener("deviceorientation", onOrient); };
+}
+
 /* ---- 화면 배경 테마 전환 ---- */
 export function setSceneTheme(theme) {
   const s = document.getElementById("bg-scene");

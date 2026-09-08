@@ -1,7 +1,7 @@
 /* ==========================================================================
    게임 화면 빌더 (순수 UI) — 솔로/라이브 공용
    ========================================================================== */
-import { el, mascot, fmt, esc, avatarEmoji } from "./ui.js";
+import { el, mascot, fmt, esc, avatarEmoji, attachTilt } from "./ui.js";
 import { catMeta, APP } from "./config.js";
 import { levelFor, rankPlayers } from "./engine.js";
 
@@ -39,9 +39,14 @@ export function buildQuestion({ q, index, total, timeLimit, trap = false, onAnsw
     timerEl
   ));
 
-  const image = el("div", { class: "q-image" },
+  const floatLayer = el("div", { class: "qi-float" }, el("span", { class: "q-emoji" }, meta.emoji));
+  const gridLayer = el("div", { class: "qi-layer qi-grid" });
+  const image = el("div", { class: "q-image tilt-scene" },
+    el("div", { class: "qi-layer qi-bg" }),
+    gridLayer,
     el("span", { class: "chip " + meta.chip + " q-cat" }, meta.icon + " " + q.category),
-    el("span", { class: "q-emoji" }, meta.emoji)
+    floatLayer,
+    el("div", { class: "qi-shine" })
   );
 
   const answers = el("div", { class: "answers" });
@@ -73,6 +78,8 @@ export function buildQuestion({ q, index, total, timeLimit, trap = false, onAnsw
   const body = el("div", { class: "grow" }, image, card);
   screen.append(body);
 
+  const detach = attachTilt(image, { max: 9, layers: [{ el: floatLayer, z: 46, p: 26 }, { el: gridLayer, z: 8, p: 10 }] });
+
   let locked = false;
   let shownAt = performance.now();
   function pick(i) {
@@ -86,6 +93,7 @@ export function buildQuestion({ q, index, total, timeLimit, trap = false, onAnsw
 
   return {
     screen, timerEl, btns,
+    destroy() { try { detach(); } catch (e) {} },
     resetClock() { shownAt = performance.now(); },
     setTimer(sec, danger) { timerEl.querySelector("b").textContent = String(sec); timerEl.classList.toggle("is-danger", !!danger); },
     lock() { locked = true; btns.forEach((b) => (b.disabled = true)); },

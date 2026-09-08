@@ -191,6 +191,7 @@ class SoloGame {
   }
 
   renderQuestion() {
+    if (this.view && this.view.destroy) this.view.destroy();
     const q = this.qs[this.idx];
     this.answered = false; this.myChoice = null; this.myElapsed = null; this._lastTick = null;
     this.view = buildQuestion({

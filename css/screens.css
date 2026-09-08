@@ -89,13 +89,29 @@
 /* ==========================================================================
    3. Quiz (4-choice)
    ========================================================================== */
+.q-screen { perspective: 1150px; }
 .q-image {
-  height: 148px; border-radius: var(--r-md); overflow: hidden; position: relative;
-  background: linear-gradient(135deg, #1c3a5e, #12233b); border: 1px solid var(--line);
-  margin-bottom: 14px; box-shadow: var(--sh-md);
+  height: 158px; border-radius: var(--r-md); overflow: hidden; position: relative;
+  background: linear-gradient(135deg, #1c3a5e, #10223b); border: 1px solid var(--line);
+  margin-bottom: 14px; box-shadow: var(--sh-md), inset 0 0 0 1px rgba(120,170,255,0.08);
+  transform-style: preserve-3d; will-change: transform;
 }
-.q-image .q-emoji { position: absolute; inset: 0; display: grid; place-items: center; font-size: 66px; filter: drop-shadow(0 8px 16px rgba(0,0,0,0.5)); }
-.q-image .q-cat { position: absolute; top: 10px; left: 10px; }
+.q-image .qi-layer { position: absolute; inset: -8%; pointer-events: none; }
+.q-image .qi-bg {
+  background:
+    radial-gradient(120% 90% at 28% 0%, rgba(90,150,230,0.5), transparent 60%),
+    radial-gradient(90% 80% at 92% 100%, rgba(34,197,94,0.28), transparent 60%);
+}
+.q-image .qi-grid {
+  background-image: linear-gradient(rgba(150,190,255,0.18) 1px, transparent 1px), linear-gradient(90deg, rgba(150,190,255,0.18) 1px, transparent 1px);
+  background-size: 26px 26px; mask-image: radial-gradient(85% 75% at 50% 40%, #000, transparent 80%); opacity: 0.55;
+}
+.q-image .qi-float { position: absolute; inset: 0; display: grid; place-items: center; will-change: transform; }
+.q-image .q-emoji { font-size: 72px; filter: drop-shadow(0 14px 22px rgba(0,0,0,0.55)); animation: emoji-bob 3.2s ease-in-out infinite; }
+@keyframes emoji-bob { 50% { transform: translateY(-9px) scale(1.05); } }
+.q-image .qi-shine { position: absolute; top: 0; left: -60%; width: 45%; height: 100%; transform: skewX(-18deg); pointer-events: none; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.17), transparent); animation: shine-sweep 4.8s ease-in-out infinite; }
+@keyframes shine-sweep { 0%, 58% { left: -60%; } 100% { left: 135%; } }
+.q-image .q-cat { position: absolute; top: 10px; left: 10px; z-index: 3; }
 .q-card { position: relative; }
 .q-prompt {
   display: flex; gap: 12px; align-items: flex-start; margin-bottom: 16px;
@@ -293,6 +309,138 @@
 .mascot-row { display: flex; align-items: flex-end; gap: 10px; }
 .mascot-row.reverse { flex-direction: row-reverse; }
 .mascot-row.reverse .speech::after { left: auto; right: 26px; }
+
+/* ==========================================================================
+   팀전 프리미엄 UI (업그레이드)
+   ========================================================================== */
+.team-screen { padding: 12px 12px calc(14px + env(safe-area-inset-bottom)); }
+.team-score {
+  position: relative; overflow: visible;
+  border-radius: 16px; padding: 10px 13px;
+  transition: transform var(--t) var(--ease-back), box-shadow var(--t), filter var(--t);
+  backdrop-filter: blur(6px);
+}
+.team-score .tn { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 900; }
+.team-score .tv { font-size: 19px; font-weight: 900; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1.1; }
+.team-score .to { font-size: 10.5px; color: var(--text-mut); font-weight: 700; margin-top: 1px; }
+.team-score .crown { position: absolute; top: -12px; right: 8px; font-size: 20px; opacity: 0; transform: scale(0.4) rotate(-18deg); transition: opacity var(--t), transform var(--t) var(--ease-back); filter: drop-shadow(0 3px 6px rgba(0,0,0,.4)); }
+.team-score.leader .crown { opacity: 1; transform: scale(1) rotate(-10deg); }
+.team-score.active { transform: translateY(-2px) scale(1.04); z-index: 2; }
+.team-score.active::after { content: ""; position: absolute; inset: -2px; border-radius: 18px; border: 2px solid currentColor; opacity: 0.9; animation: score-pulse 1.3s ease-in-out infinite; pointer-events: none; }
+@keyframes score-pulse { 0%,100% { box-shadow: 0 0 0 0 currentColor; opacity: 0.85; } 50% { box-shadow: 0 0 18px 2px currentColor; opacity: 1; } }
+.team-score .tv.bump { animation: tv-bump 0.5s var(--ease-back); }
+@keyframes tv-bump { 30% { transform: scale(1.22); } }
+
+.turn-pill { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 7px 12px; }
+.turn-pill .tp-round { font-size: 12.5px; font-weight: 900; white-space: nowrap; }
+.turn-pill .tp-bar { width: 62px; height: 5px; border-radius: 4px; background: rgba(255,255,255,0.12); overflow: hidden; }
+.turn-pill .tp-bar > i { display: block; height: 100%; background: var(--grad-gold); border-radius: 4px; transition: width var(--t-slow) var(--ease); }
+
+.board-wrap {
+  box-shadow: var(--sh-lg), 0 0 0 1px rgba(120,170,255,0.12) inset;
+  background: radial-gradient(120% 100% at 50% -5%, #1a3c62, #0a1728 62%, #060f1d);
+}
+.board-wrap::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+  background: radial-gradient(120% 85% at 50% 28%, transparent 52%, rgba(0,0,0,0.45));
+  box-shadow: inset 0 2px 0 rgba(255,255,255,0.06), inset 0 -60px 90px rgba(0,0,0,0.35);
+}
+.board-wrap::before {
+  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 44%;
+  background: radial-gradient(80% 100% at 50% 0%, rgba(120,180,255,0.14), transparent 70%);
+  pointer-events: none; z-index: 1;
+}
+
+/* 이벤트 로그 카드 */
+.board-log {
+  gap: 10px; border-radius: 14px; padding: 11px 14px; font-size: 13.5px; z-index: 3;
+  border-left: 4px solid var(--line-strong);
+  transition: border-color var(--t), transform var(--t);
+}
+.board-log .log-ic { font-size: 20px; flex: none; }
+.board-log.enter { animation: log-enter 0.4s var(--ease-back); }
+@keyframes log-enter { from { transform: translateY(8px); opacity: 0.4; } }
+.board-log.evt-good { border-left-color: var(--green-500); }
+.board-log.evt-bad { border-left-color: var(--red-500); }
+.board-log.evt-info { border-left-color: var(--blue-500); }
+.board-log.evt-trap { border-left-color: var(--gold-500); }
+
+/* 주사위 결과 팝 */
+.dice-result {
+  position: absolute; left: 50%; top: 42%; transform: translate(-50%,-50%);
+  z-index: 6; pointer-events: none; font-weight: 900; color: #fff; text-align: center;
+}
+.dice-result .num {
+  font-size: 72px; line-height: 1;
+  background: linear-gradient(180deg, #fff, var(--gold-400));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 6px 18px rgba(255,200,60,0.6)); animation: dice-pop 0.5s var(--ease-back);
+}
+.dice-result .lbl { font-size: 13px; color: var(--gold-200, #ffe27a); margin-top: 2px; letter-spacing: 0.1em; }
+@keyframes dice-pop { 0% { opacity: 0; transform: scale(0.3) rotate(-30deg); } 60% { transform: scale(1.15) rotate(6deg); } 100% { opacity: 1; transform: scale(1); } }
+
+/* 턴 전환 배너 */
+.turn-banner-fx {
+  position: fixed; left: 50%; top: 32%; transform: translate(-50%,-50%); z-index: 44; pointer-events: none;
+  display: flex; align-items: center; gap: 12px; padding: 15px 28px; border-radius: 18px;
+  font-size: 23px; font-weight: 900; color: #fff; white-space: nowrap;
+  background: linear-gradient(180deg, rgba(20,30,52,0.9), rgba(10,18,34,0.94));
+  border: 2px solid currentColor; box-shadow: 0 18px 50px rgba(0,0,0,0.5), 0 0 40px -6px currentColor;
+  animation: turn-banner 1.9s var(--ease) forwards;
+}
+.turn-banner-fx .tbf-token { font-size: 26px; }
+@keyframes turn-banner {
+  0% { opacity: 0; transform: translate(-50%,-50%) scale(0.7); }
+  14% { opacity: 1; transform: translate(-50%,-50%) scale(1.04); }
+  22% { transform: translate(-50%,-50%) scale(1); }
+  82% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%,-64%) scale(1); }
+}
+
+/* 굴리기 버튼 */
+.btn-roll { position: relative; overflow: visible; }
+.btn-roll:not(:disabled) { animation: roll-glow 2s ease-in-out infinite; }
+@keyframes roll-glow { 50% { box-shadow: 0 12px 30px var(--blue-glow), 0 0 0 3px rgba(75,155,255,0.25); } }
+.btn-roll .dice-emoji { display: inline-block; }
+.btn-roll:not(:disabled) .dice-emoji { animation: dice-wobble 2.2s ease-in-out infinite; }
+@keyframes dice-wobble { 0%,88%,100% { transform: rotate(0); } 92% { transform: rotate(-18deg); } 96% { transform: rotate(16deg); } }
+.btn-roll.rolling .dice-emoji { animation: dice-shake 0.25s linear infinite; }
+@keyframes dice-shake { 0%,100% { transform: rotate(-16deg) translateY(0); } 50% { transform: rotate(16deg) translateY(-2px); } }
+
+/* 매물(구매) 카드 */
+.prop-card { width: min(92vw, 400px); border-radius: 20px; overflow: hidden; background: var(--glass-strong); border: 1px solid var(--line-strong); box-shadow: var(--sh-lg); animation: pop-in 0.4s var(--ease-back); }
+.prop-card .pc-head { position: relative; height: 108px; display: grid; place-items: center; }
+.prop-card .pc-head .pc-emoji { font-size: 60px; filter: drop-shadow(0 8px 16px rgba(0,0,0,0.4)); }
+.prop-card .pc-head .pc-cat { position: absolute; top: 10px; left: 12px; }
+.prop-card .pc-body { padding: 16px 18px; }
+.prop-card .pc-name { font-size: 21px; font-weight: 900; }
+.prop-card .pc-price { font-size: 30px; font-weight: 900; color: var(--gold-300); margin: 4px 0 12px; }
+.prop-card .pc-stats { display: flex; gap: 8px; margin-bottom: 14px; }
+.prop-card .pc-stat { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid var(--line); border-radius: 12px; padding: 9px 10px; text-align: center; }
+.prop-card .pc-stat .l { font-size: 11px; color: var(--text-mut); font-weight: 700; }
+.prop-card .pc-stat .v { font-size: 15px; font-weight: 900; margin-top: 2px; }
+
+/* ==========================================================================
+   개인전 3D 강화 (답안 입체 / 1등 연출 회전)
+   ========================================================================== */
+.answers { transform-style: preserve-3d; }
+.ans { transform: translateZ(0); transition: transform var(--t-fast) var(--ease), border-color var(--t), background var(--t), box-shadow var(--t); }
+.ans:hover:not(:disabled) { transform: translateX(3px) translateZ(12px); box-shadow: 0 16px 30px rgba(0,0,0,0.4); }
+.ans:active:not(:disabled) { transform: translateZ(3px) scale(0.99); }
+.ans .key { transition: transform var(--t); transform: translateZ(6px); }
+.ans.is-correct { animation: ans-pop 0.55s var(--ease-back); }
+@keyframes ans-pop { 30% { transform: translateZ(28px) scale(1.035); } }
+.ans.is-wrong { animation: ans-shake 0.4s ease; }
+@keyframes ans-shake { 0%,100% { transform: translateX(0);} 25% { transform: translateX(-6px);} 75% { transform: translateX(6px);} }
+
+.reveal-laurel { animation: laurel-in 0.7s var(--ease-back) both; }
+@keyframes laurel-in { 0% { opacity: 0; transform: rotateY(-170deg) scale(0.4); } 100% { opacity: 1; transform: rotateY(0) scale(1); } }
+.reveal-rank { animation: rank-in 0.8s 0.06s var(--ease-back) both; }
+@keyframes rank-in { 0% { opacity: 0; transform: perspective(600px) rotateX(88deg) scale(0.6); } 100% { opacity: 1; transform: none; } }
+.reveal-screen { perspective: 1000px; }
+.score-break .sb { transition: transform var(--t); }
+.score-break .sb.total { animation: total-pop 0.6s 0.25s var(--ease-back) both; }
+@keyframes total-pop { 0% { opacity: 0; transform: scale(0.5) rotateY(60deg); } 100% { opacity: 1; transform: none; } }
 
 /* small helper: emoji avatar */
 .emoji-av { display: grid; place-items: center; border-radius: 50%; background: var(--ink-700); }

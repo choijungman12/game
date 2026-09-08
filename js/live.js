@@ -214,6 +214,7 @@ export async function startLivePlayer({ code, mount, go }) {
   }
   function renderQ(state) {
     clearInterval(timer);
+    if (view && view.destroy) view.destroy();
     const q = state.questions[state.currentIndex];
     view = buildQuestion({
       q, index: state.currentIndex, total: state.questions.length, timeLimit: state.settings.timeLimit,

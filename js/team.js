@@ -6,13 +6,13 @@
    ========================================================================== */
 import * as THREE from "three";
 import { TEAMS, catMeta } from "./config.js";
-import { getQuestions, shuffle } from "./data.js";
+import { getQuestions, shuffle, getTeamTiles } from "./data.js";
 import { el, mascot, toast, confetti, fmt, esc, vibrate } from "./ui.js";
 import { fx } from "./fx.js";
 import { audio, sfx } from "./audio.js";
 
-/* ---- 보드 타일 정의 (16칸: 코너 4 + 변 12) ---- */
-const TILE_DEFS = [
+/* ---- 보드 타일 정의 (16칸) — 관리자에서 지역명/가격 수정 시 override ---- */
+let TILE_DEFS = [
   { type: "start", name: "START", icon: "🚩" },
   { type: "land", name: "주문진 택지", price: 300, color: "#22c55e" },
   { type: "trap", name: "함정 퀴즈", icon: "⚠️" },
@@ -46,6 +46,7 @@ const CHANCE_BAD = [
 ];
 
 export function startTeamGame({ teamCount = 2, turns = 15, mount, onExit }) {
+  TILE_DEFS = getTeamTiles(); // 관리자에서 수정한 지역명/가격 반영
   const game = new TeamGame(teamCount, turns, mount, onExit);
   game.build();
   return game;

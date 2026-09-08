@@ -67,12 +67,34 @@ export const CATEGORY_META = {
   "교통인프라": { chip: "chip--blue",   color: "#3b82f6", icon: "🚄", emoji: "🚄" },
   "산업·택지":  { chip: "chip--green",  color: "#22c55e", icon: "🏭", emoji: "🏭" },
   "농지·산지":  { chip: "chip--green",  color: "#22c55e", icon: "🌾", emoji: "🌾" },
+  "회사소개":   { chip: "chip--gold",   color: "#f5b301", icon: "🏢", emoji: "🏢" },
+  "물건지도":   { chip: "chip--green",  color: "#22c55e", icon: "🗺️", emoji: "🗺️" },
   "함정퀴즈":   { chip: "chip--red",    color: "#ef4444", icon: "⚠️", emoji: "⚠️" },
 };
 
 export function catMeta(cat) {
   return CATEGORY_META[cat] || { chip: "chip", color: "#8ea1bd", icon: "❓", emoji: "🏞️" };
 }
+
+/* ---- 팀전 브루마블 보드 칸 기본값 (관리자에서 수정 가능) ---- */
+export const DEFAULT_TEAM_TILES = [
+  { type: "start", name: "START", icon: "🚩" },
+  { type: "land", name: "주문진 택지", price: 300, color: "#22c55e", emoji: "🌾" },
+  { type: "trap", name: "함정 퀴즈", icon: "⚠️" },
+  { type: "land", name: "속초 상가", price: 350, color: "#3b82f6", emoji: "🏪" },
+  { type: "chance", name: "개발 호재", icon: "📈" },
+  { type: "land", name: "구기동 주택", price: 400, color: "#7c3aed", emoji: "🏡" },
+  { type: "trap", name: "함정 퀴즈", icon: "⚠️" },
+  { type: "land", name: "당진 산업단지", price: 450, color: "#f5b301", emoji: "🏭" },
+  { type: "tax", name: "보유세 납부", icon: "🧾" },
+  { type: "land", name: "역세권 오피스", price: 500, color: "#3b82f6", emoji: "🏢" },
+  { type: "trap", name: "함정 퀴즈", icon: "⚠️" },
+  { type: "land", name: "GTX 역세권", price: 550, color: "#22c55e", emoji: "🚄" },
+  { type: "chance", name: "부동산 뉴스", icon: "📰" },
+  { type: "land", name: "신도시 아파트", price: 600, color: "#7c3aed", emoji: "🏙️" },
+  { type: "trap", name: "함정 퀴즈", icon: "⚠️" },
+  { type: "land", name: "도심 상업지", price: 650, color: "#f5b301", emoji: "🏬" },
+];
 
 /* 로컬 저장 키 */
 export const LS = {

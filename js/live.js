@@ -21,7 +21,7 @@ export function mountHostPanel(host) {
   host.innerHTML = "";
   const settings = getSettings();
   const startCard = el("div", {},
-    el("p", { class: "hint mb-8" }, `동기화 방식: ${driverName() === "firebase" ? "Firebase (여러 기기 접속 가능)" : "로컬(같은 브라우저 여러 탭 — 테스트용). 실제 여러 휴대폰 접속은 config.js에 Firebase 설정을 추가하세요."}`),
+    el("p", { class: "hint mb-8" }, `동기화 방식: ${driverName() === "firebase" ? "Firebase (여러 기기 접속 가능)" : "로컬(같은 브라우저 여러 탭 — 테스트용). 실제 여러 휴대폰 접속은 ‘연동 설정’에서 무료 Firebase를 연결하세요."}`),
     el("div", { class: "grid cols-2", style: { alignItems: "start" } },
       el("div", {},
         el("div", { class: "field" }, el("label", {}, "문제 수"), roLabel(settings.questionCount + "문항")),

@@ -5,10 +5,12 @@ import { APP, DEFAULT_SETTINGS, CATEGORY_META, catMeta, TEAMS } from "./config.j
 import {
   getQuestions, saveQuestions, resetQuestions, newQuestionId,
   getSettings, saveSettings, getStats, getCategories,
+  getTeamTiles, saveTeamTiles, resetTeamTiles,
 } from "./data.js";
 import { DEFAULT_INDIVIDUAL, DEFAULT_TEAM } from "./questions.data.js";
 import { el, esc, fmt, toast, mascot } from "./ui.js";
 import { makeQR } from "./qr.js";
+import { setFirebaseConfig, clearFirebaseConfig, effectiveFirebase, driverName, testFirebaseConfig } from "./store.js";
 
 const main = document.getElementById("admin-main");
 const nav = document.getElementById("nav");
@@ -18,6 +20,7 @@ const PAGES = [
   { id: "questions", icon: "📝", label: "문제 관리" },
   { id: "settings", icon: "⚙️", label: "게임 설정" },
   { id: "live", icon: "📡", label: "라이브 진행" },
+  { id: "connect", icon: "🔌", label: "연동 설정" },
   { id: "team", icon: "🎲", label: "팀전 관리" },
   { id: "ranking", icon: "🏆", label: "랭킹 관리" },
   { id: "events", icon: "🎉", label: "이벤트 관리" },
@@ -61,7 +64,7 @@ function route() {
   document.getElementById("side")?.classList.remove("open");
   ({
     dashboard: pageDashboard, questions: pageQuestions, settings: pageSettings,
-    live: pageLive, team: pageTeam, ranking: pageRanking, events: pageEvents, stats: pageStats,
+    live: pageLive, connect: pageConnect, team: pageTeam, ranking: pageRanking, events: pageEvents, stats: pageStats,
   }[page] || pageDashboard)();
 }
 
@@ -429,6 +432,38 @@ function pageTeam() {
         el("div", { class: "tl", style: { color: t.color } }, `${t.token} ${t.name}`),
         el("span", { class: "hint" }, "시작 자본 2,000점"))))),
   ));
+  // 보드 칸(지역명) 편집
+  const tiles = getTeamTiles();
+  const rows = [];
+  const tileWrap = el("div", {});
+  const typeLabel = (t) => ({ start: "출발", trap: "함정 퀴즈", chance: "찬스", tax: "세금" }[t] || t);
+  tiles.forEach((t, i) => {
+    if (t.type === "land") {
+      const nameInp = el("input", { class: "inp", value: t.name, style: { maxWidth: "220px" } });
+      const priceInp = el("input", { class: "inp", type: "number", value: t.price, style: { maxWidth: "110px" } });
+      rows.push({ i, nameInp, priceInp });
+      tileWrap.append(el("div", { style: { display: "flex", gap: "10px", alignItems: "center", padding: "9px 0", borderBottom: "1px solid var(--a-line)", flexWrap: "wrap" } },
+        el("span", { class: "tag gray", style: { flex: "none" } }, `${i + 1}칸`),
+        el("span", { style: { fontSize: "20px" } }, t.emoji || "🏠"),
+        nameInp, priceInp, el("span", { class: "hint" }, "점")));
+    } else {
+      tileWrap.append(el("div", { style: { display: "flex", gap: "10px", alignItems: "center", padding: "9px 0", borderBottom: "1px solid var(--a-line)" } },
+        el("span", { class: "tag gray", style: { flex: "none" } }, `${i + 1}칸`),
+        el("span", { style: { fontSize: "20px" } }, t.icon || "⬛"),
+        el("span", { class: "hint" }, typeLabel(t.type) + " · " + t.name + " (고정)")));
+    }
+  });
+  main.append(el("div", { class: "card mt-16" }, el("h2", {}, "보드 칸(지역) 편집"),
+    el("p", { class: "hint mb-8" }, "‘땅’ 칸의 지역명과 가격을 자유롭게 수정할 수 있습니다. 저장하면 팀전 보드에 바로 반영됩니다. (함정/찬스/세금/출발 칸은 고정)"),
+    tileWrap,
+    el("div", { style: { display: "flex", gap: "10px", marginTop: "14px" } },
+      el("button", { class: "btn green", onClick: () => {
+        const next = getTeamTiles();
+        rows.forEach((r) => { next[r.i] = { ...next[r.i], name: (r.nameInp.value.trim() || next[r.i].name), price: Math.max(50, Number(r.priceInp.value) || next[r.i].price) }; });
+        saveTeamTiles(next); toast("보드 칸을 저장했습니다 ✓", "ok");
+      } }, "💾 지역 저장"),
+      el("button", { class: "btn ghost", onClick: () => { resetTeamTiles(); toast("기본 지역으로 복원했습니다", "ok"); pageTeam(); } }, "↺ 기본 복원"))));
+
   main.append(el("div", { class: "card mt-16" }, el("h2", {}, "함정 퀴즈"),
     el("p", { class: "hint" }, "팀전 함정 칸에서 출제되는 문제입니다. ‘문제 관리 → 팀전 문제’ 탭에서 수정할 수 있습니다."),
     el("button", { class: "btn blue sm", onClick: () => { qTab = "team"; location.hash = "questions"; } }, "팀전 문제 편집 →")));
@@ -481,6 +516,75 @@ function pageStats() {
     stat("o", "✅", st.correct || 0, "정답 수"),
     stat("p", "🎯", acc + "%", "정답률")));
   main.append(el("div", { class: "card mt-16" }, el("h2", {}, "문항 카테고리 분포"), catBars([...getQuestions("individual"), ...getQuestions("team")])));
+}
+
+/* ==========================================================================
+   연동 설정 (무료 Firebase)
+   ========================================================================== */
+function pageConnect() {
+  head("연동 설정", "여러 휴대폰이 동시에 접속하는 라이브 모드를 위한 무료 Firebase 연결입니다.");
+  const cur = effectiveFirebase();
+  const isFb = driverName() === "firebase";
+
+  main.append(el("div", { class: "card" },
+    el("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" } },
+      el("div", {}, el("h2", { style: { margin: 0 } }, "현재 상태"),
+        el("div", { class: "hint" }, isFb ? "여러 기기 실시간 접속 가능" : "로컬 모드 — 같은 브라우저 여러 탭에서만 테스트됩니다")),
+      el("span", { class: "tag " + (isFb ? "green" : "gray") }, el("span", { class: "dot" }), isFb ? "Firebase 연결됨" : "미연결(로컬)")),
+    isFb ? el("div", { class: "hint", style: { marginTop: "8px", wordBreak: "break-all" } }, "DB: " + (cur.databaseURL || "(설정됨)")) : null));
+
+  const urlInp = el("input", { class: "inp", placeholder: "https://<프로젝트>-default-rtdb.firebasedatabase.app", value: (cur && cur.databaseURL) || "" });
+  const advTa = el("textarea", { class: "inp", placeholder: 'firebaseConfig 전체 붙여넣기(선택)\nconst firebaseConfig = { apiKey: "...", databaseURL: "...", ... }' });
+  const statusLine = el("div", { class: "hint", style: { marginTop: "8px" } });
+
+  main.append(el("div", { class: "card mt-16" },
+    el("h2", {}, "연결하기"),
+    el("div", { class: "field" }, el("label", {}, "Realtime Database URL (권장 · 이것만 있으면 됩니다)"), urlInp),
+    el("details", {}, el("summary", { class: "hint", style: { cursor: "pointer", margin: "6px 0" } }, "고급: firebaseConfig 전체 붙여넣기"), advTa),
+    el("div", { style: { display: "flex", gap: "10px", marginTop: "8px", flexWrap: "wrap" } },
+      el("button", { class: "btn green", onClick: save }, "🔌 저장 & 연결 테스트"),
+      el("button", { class: "btn ghost", onClick: disconnect }, "연결 해제")),
+    statusLine));
+
+  main.append(el("div", { class: "card mt-16" }, el("h2", {}, "무료 연결 방법 (약 3분)"),
+    ...[
+      ["1", "console.firebase.google.com 접속 → <b>프로젝트 만들기</b> (무료 Spark 요금제로 충분)"],
+      ["2", "왼쪽 메뉴 <b>빌드 → Realtime Database → 데이터베이스 만들기</b> → 위치 선택 → <b>테스트 모드로 시작</b>"],
+      ["3", "생성된 URL 복사 (예: https://xxxx-default-rtdb.firebasedatabase.app)"],
+      ["4", "위 <b>Database URL</b> 칸에 붙여넣고 <b>저장 & 연결 테스트</b>"],
+      ["5", "배포된 게임에서 <b>관리자 → 라이브 진행</b> → QR을 띄우면 참가자들이 휴대폰으로 접속합니다"],
+    ].map(([n, t]) => el("div", { style: { display: "flex", gap: "12px", padding: "8px 0", borderBottom: "1px solid var(--a-line)" } },
+      el("span", { class: "tag blue", style: { flex: "none" } }, n),
+      el("div", { class: "hint", style: { color: "var(--a-ink)", fontSize: "13.5px" }, html: t })))));
+
+  main.append(el("div", { class: "card mt-16" }, el("h2", {}, "보안 규칙 (테스트 모드 만료 시 붙여넣기)"),
+    el("p", { class: "hint" }, "Realtime Database → 규칙 탭에 아래를 넣으면 게임이 계속 동작합니다. (행사용 임시 공개 규칙)"),
+    el("pre", { style: { background: "#0f1a2e", color: "#cfe0ff", padding: "14px", borderRadius: "10px", overflow: "auto", fontSize: "12.5px" } },
+      JSON.stringify({ rules: { rooms: { ".read": true, ".write": true }, __notl_ping__: { ".read": true, ".write": true } } }, null, 2))));
+
+  function parseConfig(text) {
+    let t = text.trim().replace(/^\s*(export\s+)?(const|let|var)\s+\w+\s*=\s*/, "").replace(/;\s*$/, "");
+    try { return JSON.parse(t); } catch (e) {}
+    try { return new Function("return (" + t + ")")(); } catch (e) { return null; }
+  }
+  async function save(e) {
+    let cfg = null;
+    const adv = advTa.value.trim();
+    if (adv) { cfg = parseConfig(adv); if (!cfg || !(cfg.databaseURL || cfg.apiKey)) { toast("config 형식을 확인하세요", "err"); return; } }
+    else {
+      const u = urlInp.value.trim();
+      if (!u) { toast("Database URL을 입력하세요", "err"); return; }
+      if (!/^https:\/\/.+/.test(u)) { toast("올바른 https URL이 아닙니다", "err"); return; }
+      cfg = { databaseURL: u };
+    }
+    const btn = e.currentTarget; btn.disabled = true;
+    statusLine.textContent = "연결 테스트 중...";
+    const res = await testFirebaseConfig(cfg);
+    btn.disabled = false;
+    if (res.ok) { setFirebaseConfig(cfg); toast("Firebase 연결 성공! ✓", "ok"); pageConnect(); }
+    else { statusLine.innerHTML = "❌ 연결 실패: " + esc(res.error || "알 수 없는 오류") + " — DB URL과 보안 규칙(테스트 모드)을 확인하세요."; toast("연결 실패", "err"); }
+  }
+  function disconnect() { clearFirebaseConfig(); toast("로컬 모드로 전환했습니다", "ok"); pageConnect(); }
 }
 
 /* ==========================================================================

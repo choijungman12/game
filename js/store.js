@@ -61,23 +61,56 @@ class FirebaseDriver {
   dispose() {}
 }
 
+const FB_KEY = "notl.firebase";
+const FB_APP_URL = "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+const FB_DB_URL = "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+/* 우선순위: 관리자에서 저장한 설정(localStorage) > config.js의 FIREBASE */
+export function effectiveFirebase() {
+  try {
+    const ov = JSON.parse(localStorage.getItem(FB_KEY) || "null");
+    if (ov && (ov.databaseURL || ov.apiKey)) return ov;
+  } catch (e) {}
+  return FIREBASE;
+}
+export function setFirebaseConfig(cfg) { localStorage.setItem(FB_KEY, JSON.stringify(cfg)); _fb = null; }
+export function clearFirebaseConfig() { try { localStorage.removeItem(FB_KEY); } catch (e) {} _fb = null; }
+
 let _fb = null;
 async function initFirebase() {
   if (_fb) return _fb;
-  const appMod = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
-  const dbMod = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js");
-  const app = appMod.initializeApp(FIREBASE);
+  const cfg = effectiveFirebase();
+  const appMod = await import(FB_APP_URL);
+  const dbMod = await import(FB_DB_URL);
+  const app = appMod.initializeApp(cfg);
   const db = dbMod.getDatabase(app);
   _fb = { db, fns: dbMod };
   return _fb;
 }
 
-export function isLive() { return !!FIREBASE; }
-export function driverName() { return FIREBASE ? "firebase" : "local"; }
+export function isLive() { return !!effectiveFirebase(); }
+export function driverName() { return effectiveFirebase() ? "firebase" : "local"; }
 
 export async function makeDriver(code) {
-  if (FIREBASE) { const { db, fns } = await initFirebase(); return new FirebaseDriver(code, db, fns); }
+  if (effectiveFirebase()) { const { db, fns } = await initFirebase(); return new FirebaseDriver(code, db, fns); }
   return new LocalDriver(code);
+}
+
+/* 연결 테스트: 임시 app으로 ping 쓰기/읽기/삭제 */
+export async function testFirebaseConfig(cfg) {
+  try {
+    const appMod = await import(FB_APP_URL);
+    const dbMod = await import(FB_DB_URL);
+    const name = "notl_test_" + Math.random().toString(36).slice(2, 7);
+    const app = appMod.initializeApp(cfg, name);
+    const db = dbMod.getDatabase(app);
+    const r = dbMod.ref(db, "__notl_ping__/" + name);
+    await dbMod.set(r, { ok: true });
+    const snap = await dbMod.get(r);
+    try { await dbMod.remove(r); } catch (e) {}
+    try { await appMod.deleteApp(app); } catch (e) {}
+    return { ok: !!(snap && snap.exists()) };
+  } catch (e) { return { ok: false, error: (e && e.message) || String(e) }; }
 }
 
 /* ---------------- Room (드라이버 위 얇은 API) ---------------- */
